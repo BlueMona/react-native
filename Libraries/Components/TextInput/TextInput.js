@@ -705,10 +705,23 @@ const TextInput = React.createClass({
   },
 
   _renderAndroid: function() {
-    const props = Object.assign({}, this.props);
-    props.style = [this.props.style];
-    props.autoCapitalize =
+    var onSelectionChange;
+    if (this.props.selectionState || this.props.onSelectionChange) {
+      onSelectionChange = (event: Event) => {
+        if (this.props.selectionState) {
+          var selection = event.nativeEvent.selection;
+          this.props.selectionState.update(selection.start, selection.end);
+        }
+        this.props.onSelectionChange && this.props.onSelectionChange(event);
+      };
+    }
+
+    var autoCapitalize =
       UIManager.AndroidTextInput.Constants.AutoCapitalizationType[this.props.autoCapitalize];
+    var textAlign = UIManager.AndroidTextInput.Constants.TextAlign[this.props.textAlign];
+    var textAlignVertical =
+      UIManager.AndroidTextInput.Constants.TextAlignVertical[this.props.textAlignVertical];
+
     var children = this.props.children;
     var childCount = 0;
     React.Children.forEach(children, () => ++childCount);
