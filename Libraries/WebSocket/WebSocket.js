@@ -71,7 +71,7 @@ class WebSocket extends EventTarget(...WEBSOCKET_EVENTS) {
   readyState: number = CONNECTING;
   url: ?string;
 
-  constructor(url: string, protocols: ?string | ?Array<string>, options: ?{origin?: string}) {
+  constructor(url: string, protocols: ?string | ?Array<string>, headers: ?{origin?: string}, options: ?{origin?: string}) {
     super();
     if (typeof protocols === 'string') {
       protocols = [protocols];
@@ -83,7 +83,7 @@ class WebSocket extends EventTarget(...WEBSOCKET_EVENTS) {
 
     this._eventEmitter = new NativeEventEmitter(RCTWebSocketModule);
     this._socketId = nextWebSocketId++;
-    RCTWebSocketModule.connect(url, protocols, options, this._socketId);
+    RCTWebSocketModule.connect(url, protocols, headers, options, this._socketId);
     this._registerEvents();
   }
 

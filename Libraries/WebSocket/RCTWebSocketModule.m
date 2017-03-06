@@ -57,14 +57,33 @@ RCT_EXPORT_MODULE()
   }
 }
 
-RCT_EXPORT_METHOD(connect:(NSURL *)URL protocols:(NSArray *)protocols headers:(NSDictionary *)headers socketID:(nonnull NSNumber *)socketID)
+RCT_EXPORT_METHOD(connect:(NSURL *)URL protocols:(NSArray *)protocols headers:(NSDictionary *)headers options:(nullable NSDictionary *)options socketID:(nonnull NSNumber *)socketID)
 {
   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:URL];
   [headers enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
     [request addValue:[RCTConvert NSString:value] forHTTPHeaderField:key];
   }];
-
-  RCTSRWebSocket *webSocket = [[RCTSRWebSocket alloc] initWithURLRequest:request protocols:protocols];
+  NSArray *sslCerts = NULL;
+  
+  if ( options[@"pinSSLCert"] ) {
+    NSString* certPath = [[NSBundle mainBundle] pathForResource:options[@"pinSSLCert"] ofType:@"cer"];
+    NSData* certData = [NSData dataWithContentsOfFile:certPath];
+    SecCertificateRef cert;
+    if( [certData length] ) {
+        cert = SecCertificateCreateWithData(NULL, (__bridge CFDataRef)certData);
+        if( cert != NULL ) {
+            CFStringRef certSummary = SecCertificateCopySubjectSummary(cert);
+            NSString* summaryString = [[NSString alloc] initWithString:(__bridge NSString*)certSummary];
+            NSLog(@"CERT SUMMARY: %@", summaryString);
+            sslCerts = @[(__bridge id)cert];
+        } else {
+            NSLog(@" *** ERROR *** trying to create the SSL certificate from data located at %@, but failed", certPath);
+        }
+    }
+  }
+  request.RCTSR_SSLPinnedCertificates = sslCerts;
+  RCTSRWebSocket *webSocket = [[RCTSRWebSocket alloc]
+    initWithURLRequest:request protocols:protocols];
   webSocket.delegate = self;
   webSocket.reactTag = socketID;
   if (!_sockets) {
