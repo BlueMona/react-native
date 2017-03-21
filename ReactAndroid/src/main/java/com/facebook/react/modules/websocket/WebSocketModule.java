@@ -10,6 +10,7 @@
 package com.facebook.react.modules.websocket;
 
 import android.util.Base64;
+import android.util.Log;
 
 import java.io.IOException;
 import java.lang.IllegalStateException;
@@ -31,6 +32,7 @@ import com.facebook.react.module.annotations.ReactModule;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.network.ForwardingCookieHandler;
 
+import okhttp3.CertificatePinner;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -80,12 +82,27 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
     final String url,
     @Nullable final ReadableArray protocols,
     @Nullable final ReadableMap headers,
+    @Nullable final ReadableMap options,
     final int id) {
-    OkHttpClient client = new OkHttpClient.Builder()
+    OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
       .connectTimeout(10, TimeUnit.SECONDS)
       .writeTimeout(10, TimeUnit.SECONDS)
-      .readTimeout(0, TimeUnit.MINUTES) // Disable timeouts for read
-      .build();
+      .readTimeout(0, TimeUnit.MINUTES);
+
+    final boolean pinning = options != null
+            && options.hasKey("pinSSLCertHash") && options.hasKey("pinSSLHost")
+            && url.startsWith(String.format("wss://%s/", options.getString("pinSSLHost")));
+    if (pinning) {
+      String hash = options.getString("pinSSLCertHash");
+      String host = options.getString("pinSSLHost");
+      Log.i(this.getName(), String.format("WebSocketModule.java: %s - %s", host, hash));
+      CertificatePinner certificatePinner = new CertificatePinner.Builder()
+              .add(host, hash)
+              .build();
+      clientBuilder = clientBuilder.certificatePinner(certificatePinner);
+    }
+
+    OkHttpClient client = clientBuilder.build();
 
     Request.Builder builder = new Request.Builder()
         .tag(id)
@@ -136,6 +153,7 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
 
       @Override
       public void onOpen(WebSocket webSocket, Response response) {
+        if (pinning) Log.i("WebSocketCall", "pinned connection is successful");
         mWebSocketConnections.put(id, webSocket);
         WritableMap params = Arguments.createMap();
         params.putInt("id", id);
@@ -153,6 +171,7 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
 
       @Override
       public void onFailure(IOException e, Response response) {
+        if (pinning) Log.e("WebSocketCall", e.getMessage());
         notifyWebSocketFailed(id, e.getMessage());
       }
 
