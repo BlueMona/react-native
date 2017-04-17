@@ -171,7 +171,7 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
 
       @Override
       public void onFailure(IOException e, Response response) {
-        if (pinning) Log.e("WebSocketCall", e.getMessage());
+        // if (pinning) Log.e("WebSocketCall", e.getMessage());
         notifyWebSocketFailed(id, e.getMessage());
       }
 
