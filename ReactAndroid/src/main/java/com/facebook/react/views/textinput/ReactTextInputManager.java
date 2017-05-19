@@ -33,6 +33,7 @@ import android.widget.TextView;
 
 import com.facebook.yoga.YogaConstants;
 import com.facebook.infer.annotation.Assertions;
+import com.facebook.react.bridge.JSApplicationIllegalArgumentException;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
@@ -521,6 +522,8 @@ public class ReactTextInputManager extends BaseViewManager<ReactEditText, Layout
       flagsToSet = INPUT_TYPE_KEYBOARD_NUMBERED;
     } else if (KEYBOARD_TYPE_EMAIL_ADDRESS.equalsIgnoreCase(keyboardType)) {
       flagsToSet = InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS | InputType.TYPE_CLASS_TEXT;
+    } else if (KEYBOARD_TYPE_PHONE_PAD.equalsIgnoreCase(keyboardType)) {
+      flagsToSet = InputType.TYPE_CLASS_PHONE;
     }
     updateStagedInputTypeFlag(
         view,
@@ -528,6 +531,70 @@ public class ReactTextInputManager extends BaseViewManager<ReactEditText, Layout
             InputType.TYPE_CLASS_TEXT,
         flagsToSet);
     checkPasswordType(view);
+  }
+
+  @ReactProp(name = "returnKeyType")
+  public void setReturnKeyType(ReactEditText view, String returnKeyType) {
+    view.setReturnKeyType(returnKeyType);
+  }
+
+  @ReactProp(name = "disableFullscreenUI", defaultBoolean = false)
+  public void setDisableFullscreenUI(ReactEditText view, boolean disableFullscreenUI) {
+    view.setDisableFullscreenUI(disableFullscreenUI);
+  }
+
+  private static final int IME_ACTION_ID = 0x670;
+
+  @ReactProp(name = "returnKeyLabel")
+  public void setReturnKeyLabel(ReactEditText view, String returnKeyLabel) {
+    view.setImeActionLabel(returnKeyLabel, IME_ACTION_ID);
+  }
+
+  @ReactPropGroup(names = {
+      ViewProps.BORDER_RADIUS,
+      ViewProps.BORDER_TOP_LEFT_RADIUS,
+      ViewProps.BORDER_TOP_RIGHT_RADIUS,
+      ViewProps.BORDER_BOTTOM_RIGHT_RADIUS,
+      ViewProps.BORDER_BOTTOM_LEFT_RADIUS
+  }, defaultFloat = YogaConstants.UNDEFINED)
+  public void setBorderRadius(ReactEditText view, int index, float borderRadius) {
+    if (!YogaConstants.isUndefined(borderRadius)) {
+      borderRadius = PixelUtil.toPixelFromDIP(borderRadius);
+    }
+
+    if (index == 0) {
+      view.setBorderRadius(borderRadius);
+    } else {
+      view.setBorderRadius(borderRadius, index - 1);
+    }
+  }
+
+  @ReactProp(name = "borderStyle")
+  public void setBorderStyle(ReactEditText view, @Nullable String borderStyle) {
+    view.setBorderStyle(borderStyle);
+  }
+
+  @ReactPropGroup(names = {
+      ViewProps.BORDER_WIDTH,
+      ViewProps.BORDER_LEFT_WIDTH,
+      ViewProps.BORDER_RIGHT_WIDTH,
+      ViewProps.BORDER_TOP_WIDTH,
+      ViewProps.BORDER_BOTTOM_WIDTH,
+  }, defaultFloat = YogaConstants.UNDEFINED)
+  public void setBorderWidth(ReactEditText view, int index, float width) {
+    if (!YogaConstants.isUndefined(width)) {
+      width = PixelUtil.toPixelFromDIP(width);
+    }
+    view.setBorderWidth(SPACING_TYPES[index], width);
+  }
+
+  @ReactPropGroup(names = {
+      "borderColor", "borderLeftColor", "borderRightColor", "borderTopColor", "borderBottomColor"
+  }, customType = "Color")
+  public void setBorderColor(ReactEditText view, int index, Integer color) {
+    float rgbComponent = color == null ? YogaConstants.UNDEFINED : (float) ((int)color & 0x00FFFFFF);
+    float alphaComponent = color == null ? YogaConstants.UNDEFINED : (float) ((int)color >>> 24);
+    view.setBorderColor(SPACING_TYPES[index], rgbComponent, alphaComponent);
   }
 
   @Override
@@ -546,6 +613,20 @@ public class ReactTextInputManager extends BaseViewManager<ReactEditText, Layout
           InputType.TYPE_TEXT_VARIATION_PASSWORD,
           InputType.TYPE_NUMBER_VARIATION_PASSWORD);
     }
+  }
+
+  /**
+   * This code was taken from the method parseNumericFontWeight of the class ReactTextShadowNode
+   * TODO: Factor into a common place they can both use
+   *
+   * Return -1 if the input string is not a valid numeric fontWeight (100, 200, ..., 900), otherwise
+   * return the weight.
+   */
+  private static int parseNumericFontWeight(String fontWeightString) {
+    // This should be much faster than using regex to verify input and Integer.parseInt
+    return fontWeightString.length() == 3 && fontWeightString.endsWith("00")
+            && fontWeightString.charAt(0) <= '9' && fontWeightString.charAt(0) >= '1' ?
+            100 * (fontWeightString.charAt(0) - '0') : -1;
   }
 
   private static void updateStagedInputTypeFlag(
@@ -786,16 +867,6 @@ public class ReactTextInputManager extends BaseViewManager<ReactEditText, Layout
   @Override
   public @Nullable Map getExportedViewConstants() {
     return MapBuilder.of(
-        "AutoCapitalizationType",
-        MapBuilder.of(
-            "start", Gravity.START,
-            "center", Gravity.CENTER_HORIZONTAL,
-            "end", Gravity.END),
-        "TextAlignVertical",
-        MapBuilder.of(
-            "top", Gravity.TOP,
-            "center", Gravity.CENTER_VERTICAL,
-            "bottom", Gravity.BOTTOM),
         "AutoCapitalizationType",
         MapBuilder.of(
             "none",
