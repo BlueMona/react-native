@@ -29,6 +29,7 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.common.SystemClock;
 import com.facebook.react.common.network.OkHttpCallUtil;
 import com.facebook.react.module.annotations.ReactModule;
 import com.facebook.react.modules.core.DeviceEventManagerModule.RCTDeviceEventEmitter;
@@ -168,13 +169,24 @@ public final class NetworkingModule extends ReactContextBaseJavaModule {
       final boolean useIncrementalUpdates,
       int timeout,
       boolean withCredentials) {
-    Request.Builder requestBuilder = new Request.Builder().url(url);
+
+    Request.Builder requestBuilder = null;
+    final RCTDeviceEventEmitter eventEmitter = getEventEmitter();
+    try {
+      requestBuilder = new Request.Builder().url(url);
+    } catch(Exception e) {
+      ResponseUtil.onRequestError(
+              eventEmitter,
+              requestId,
+              "Bad URL scheme",
+              null);
+      return;
+    }
 
     if (requestId != 0) {
       requestBuilder.tag(requestId);
     }
 
-    final RCTDeviceEventEmitter eventEmitter = getEventEmitter();
     OkHttpClient.Builder clientBuilder = mClient.newBuilder();
 
     if (!withCredentials) {
