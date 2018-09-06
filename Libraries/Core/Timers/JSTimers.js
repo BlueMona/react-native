@@ -243,15 +243,15 @@ const JSTimers = {
    * @param {number} duration Number of milliseconds.
    */
   setTimeout: function(func: Function, duration: number, ...args: any): number {
-    if (__DEV__ && IS_ANDROID && duration > MAX_TIMER_DURATION_MS) {
-      console.warn(
-        ANDROID_LONG_TIMER_MESSAGE +
-          '\n' +
-          '(Saw setTimeout with duration ' +
-          duration +
-          'ms)',
-      );
-    }
+    // if (__DEV__ && IS_ANDROID && duration > MAX_TIMER_DURATION_MS) {
+    //   console.warn(
+    //     ANDROID_LONG_TIMER_MESSAGE +
+    //       '\n' +
+    //       '(Saw setTimeout with duration ' +
+    //       duration +
+    //       'ms)',
+    //   );
+    // }
     const id = _allocateCallback(
       () => func.apply(undefined, args),
       'setTimeout',
