@@ -54,6 +54,13 @@ function findMatchingSimulator(simulators, simulatorName) {
           version,
         };
       }
+      if (simulator.udid === simulatorName && !match) {
+        match = {
+          udid: simulator.udid,
+          name: simulator.name,
+          version
+        };
+      }
       // Keeps track of the first available simulator for use if we can't find one above.
       if (simulatorName === null && !match) {
         match = {

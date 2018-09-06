@@ -317,7 +317,8 @@ public class UIImplementation {
     }
     ReactShadowNode cssNode = mShadowNodeRegistry.getNode(tag);
     if (cssNode == null) {
-      throw new IllegalViewOperationException("Trying to update non-existent view with tag " + tag);
+      return;
+      // throw new IllegalViewOperationException("Trying to update non-existent view with tag " + tag);
     }
 
     if (props != null) {
@@ -441,6 +442,8 @@ public class UIImplementation {
       cssNodeToManage.removeChildAt(indicesToRemove[i]);
       lastIndexRemoved = indicesToRemove[i];
     }
+
+    if (cssNodeToManage == null) return;
 
     for (int i = 0; i < viewsToAdd.length; i++) {
       ViewAtIndex viewAtIndex = viewsToAdd[i];
