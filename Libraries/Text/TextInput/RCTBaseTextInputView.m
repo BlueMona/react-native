@@ -121,8 +121,20 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
 - (void)setAttributedText:(NSAttributedString *)attributedText
 {
   NSInteger eventLag = _nativeEventCount - _mostRecentEventCount;
+  BOOL textNeedsUpdate = NO;
+  // Remove tag attribute to ensure correct attributed string comparison.
+  NSMutableAttributedString *const backedTextInputViewTextCopy = [self.backedTextInputView.attributedText mutableCopy];
+  NSMutableAttributedString *const attributedTextCopy = [attributedText mutableCopy];
 
-  if (eventLag == 0 && ![attributedText isEqualToAttributedString:self.backedTextInputView.attributedText]) {
+  [backedTextInputViewTextCopy removeAttribute:RCTTextAttributesTagAttributeName
+                                         range:NSMakeRange(0, backedTextInputViewTextCopy.length)];
+
+  [attributedTextCopy removeAttribute:RCTTextAttributesTagAttributeName
+                                range:NSMakeRange(0, attributedTextCopy.length)];
+
+  textNeedsUpdate = ([self textOf:attributedTextCopy equals:backedTextInputViewTextCopy] == NO);
+
+  if (eventLag == 0 && textNeedsUpdate) {
     UITextRange *selection = self.backedTextInputView.selectedTextRange;
     NSInteger oldTextLength = self.backedTextInputView.attributedText.string.length;
 
@@ -131,13 +143,13 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
     if (selection.empty) {
       // Maintaining a cursor position relative to the end of the old text.
       NSInteger offsetStart =
-        [self.backedTextInputView offsetFromPosition:self.backedTextInputView.beginningOfDocument
-                                          toPosition:selection.start];
+      [self.backedTextInputView offsetFromPosition:self.backedTextInputView.beginningOfDocument
+                                        toPosition:selection.start];
       NSInteger offsetFromEnd = oldTextLength - offsetStart;
       NSInteger newOffset = attributedText.string.length - offsetFromEnd;
       UITextPosition *position =
-        [self.backedTextInputView positionFromPosition:self.backedTextInputView.beginningOfDocument
-                                                offset:newOffset];
+      [self.backedTextInputView positionFromPosition:self.backedTextInputView.beginningOfDocument
+                                              offset:newOffset];
       [self.backedTextInputView setSelectedTextRange:[self.backedTextInputView textRangeFromPosition:position toPosition:position]
                                       notifyDelegate:YES];
     }
@@ -147,6 +159,8 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
     RCTLogWarn(@"Native TextInput(%@) is %lld events ahead of JS - try to make your JS faster.", self.backedTextInputView.attributedText.string, (long long)eventLag);
   }
 }
+
+
 
 - (RCTTextSelection *)selection
 {
